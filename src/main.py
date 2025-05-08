@@ -46,8 +46,9 @@ class App(ctk.CTk):
         default_menu_font.configure(size=14)
 
         self.title("Horloge Personnalisée")
-        self.geometry("350x240")  # Augmenter la hauteur pour le bouton
-        self.minsize(350, 150)
+        # self.geometry("300x240")  # Augmenter la hauteur pour le bouton
+        self.default_geometry = self.geometry()  # Sauvegarde la taille d'origine
+        self.minsize(300, 150)
 
         self.theme = ctk.StringVar(value="System")
         self.font_path = os.path.join("assets", "DSEG7Modern-BoldItalic.ttf")
@@ -170,9 +171,19 @@ class App(ctk.CTk):
         if self.alarm_handler.is_alarm_set() and self.alarm_handler.should_ring():
             self.alarm_handler.ring()
             self.ack_button.pack(side="bottom", pady=2)
+            self.geometry("350x250")  # Agrandir la fenêtre pour le bouton
         else:
             self.ack_button.pack_forget()
+            # self.geometry("350x240")  # Taille normale
+            self.geometry(self.default_geometry)  # Restaure la taille d'origine ou utilisateur
         self.after(1000, self.check_alarm)
+
+    def acknowledge_alarm(self):
+        self.alarm_handler.stop()
+        self.alarm_handler.set_alarm(None)  # Désactive l'alarme
+        self.ack_button.pack_forget()
+        self.geometry(self.default_geometry)  # Réduire la fenêtre après acquittement
+        self.save_preferences()
 
     def save_preferences(self):
         config = {
@@ -186,12 +197,6 @@ class App(ctk.CTk):
             print("Préférences sauvegardées.")
         except IOError:
             print("Erreur lors de la sauvegarde des préférences.")
-
-    def acknowledge_alarm(self):
-        self.alarm_handler.stop()
-        self.alarm_handler.set_alarm(None)  # Désactive l'alarme
-        self.ack_button.pack_forget()
-        self.save_preferences()  # Sauvegarder les préférences après acquittement
 
     def open_settings(self):
         if self.settings_window is None or not self.settings_window.winfo_exists():
