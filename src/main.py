@@ -46,9 +46,14 @@ class App(ctk.CTk):
         default_menu_font.configure(size=14)
 
         self.title("Horloge Personnalisée")
-        # self.geometry("300x240")  # Augmenter la hauteur pour le bouton
+        # self.geometry("250, 150")  # Augmenter la hauteur pour le bouton
         self.default_geometry = self.geometry()  # Sauvegarde la taille d'origine
-        self.minsize(300, 150)
+        self.minsize(250, 150)
+
+        self.update_idletasks()  # S'assure que la géométrie est à jour
+        width = self.winfo_width()
+        height = self.winfo_height()
+        self.default_size = f"{width}x{height}"  # Sauvegarde uniquement la taille
 
         self.theme = ctk.StringVar(value="System")
         self.font_path = os.path.join("assets", "DSEG7Modern-BoldItalic.ttf")
@@ -102,11 +107,17 @@ class App(ctk.CTk):
             self, text="", fg_color="gray70", text_color="white"
         )
         self.statusbar.pack(side="bottom", fill="x")
-        self.update_alarm_status()
 
+        self._programmatic_resize = (
+            False  # Ajouté pour différencier les redimensionnements
+        )
+        self.alarm_active = False  # Ajouté pour suivre l'état de l'alarme
+        self.update_alarm_status()
         self.update_clock()
         self.check_alarm()
-
+        self.bind(
+            "<Configure>", self.on_configure
+        )  # Pour suivre les redimensionnements
         self.settings_window = None
 
     def load_preferences(self):
@@ -138,6 +149,11 @@ class App(ctk.CTk):
         ctk.set_appearance_mode(self.theme.get())
         self.save_preferences()  # Sauvegarder le thème lors du changement
 
+    def on_configure(self, event):
+        # Met à jour la taille par défaut si l'utilisateur redimensionne la fenêtre
+        if event.widget == self and not self._programmatic_resize:
+            self.default_size = f"{self.winfo_width()}x{self.winfo_height()}"
+
     def update_alarm_status(self):
         if self.alarm_handler.is_alarm_set():
             self.statusbar.configure(
@@ -168,21 +184,36 @@ class App(ctk.CTk):
             self.master.save_preferences()
 
     def check_alarm(self):
-        if self.alarm_handler.is_alarm_set() and self.alarm_handler.should_ring():
+        alarm_should_ring = (
+            self.alarm_handler.is_alarm_set() and self.alarm_handler.should_ring()
+        )
+        if alarm_should_ring and not self.alarm_active:
             self.alarm_handler.ring()
             self.ack_button.pack(side="bottom", pady=2)
-            self.geometry("350x250")  # Agrandir la fenêtre pour le bouton
-        else:
+            self._programmatic_resize = True
+            self.geometry("280x240")  # Agrandir la fenêtre pour le bouton
+            self._programmatic_resize = False
+            self.alarm_active = True
+        elif not alarm_should_ring and self.alarm_active:
             self.ack_button.pack_forget()
-            # self.geometry("350x240")  # Taille normale
-            self.geometry(self.default_geometry)  # Restaure la taille d'origine ou utilisateur
+            self._programmatic_resize = True
+            self.geometry(self.default_size)  # Restaure uniquement la taille
+            self._programmatic_resize = False
+            self.alarm_active = False
+        elif not alarm_should_ring:
+            self.ack_button.pack_forget()
+            self.alarm_active = False
         self.after(1000, self.check_alarm)
 
     def acknowledge_alarm(self):
         self.alarm_handler.stop()
-        self.alarm_handler.set_alarm(None)  # Désactive l'alarme
+        self.alarm_handler.set_alarm(None)
         self.ack_button.pack_forget()
-        self.geometry(self.default_geometry)  # Réduire la fenêtre après acquittement
+        print(f"Default size: {self.default_size}")
+        self._programmatic_resize = True
+        self.geometry(self.default_size)
+        self._programmatic_resize = False
+        self.alarm_active = False
         self.save_preferences()
 
     def save_preferences(self):
