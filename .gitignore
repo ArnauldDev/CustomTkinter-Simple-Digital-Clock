@@ -1,3 +1,24 @@
+# Fichiers et répertoires à exclure de la gestion de version Git
+# voir https://git-scm.com/docs/gitignore pour plus d'informations sur la syntaxe des fichiers .gitignore
+# 
+# Exemple de fichiers et répertoires à ignorer
+# *.log
+# venv / Byte-compiled / optimized / DLL files
+
+# Répertoires
+
+# Répertoire contenant les fichiers de configuration de Visual Studio Code
+.vscode/
+
+# Répertoire contenant l'environnement virtuel Python
+.env/
+
+# Répertoire contenant les fichiers .pyc générés par Python
+__pycache__/
+
+# Fichiers
+*.log
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
